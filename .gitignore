@@ -1,1 +1,5 @@
+/project/target
+.project
+.classpath
+.cache
 /target
