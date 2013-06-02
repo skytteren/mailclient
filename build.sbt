@@ -4,6 +4,8 @@ organization := "no.skytteren"
 
 scalaVersion := "2.10.1"
 
+releaseSettings
+
 libraryDependencies += "javax.mail" % "mail" % "1.4.7"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.0.M6-SNAP19" % "test"
