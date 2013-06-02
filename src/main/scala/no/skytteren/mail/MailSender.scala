@@ -81,3 +81,6 @@ class TLSMailSender(host: String, port: Int = 587, mailer: String, username: Str
 	}
 	
 }
+
+class GMailMailSender(mailer: String, username: String, password: String) 
+	extends TLSMailSender(host = "smtp.gmail.com", mailer = mailer, username = username, password = password)
