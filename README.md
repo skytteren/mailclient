@@ -3,6 +3,9 @@ Simple Scala wrapper for Java Mail
 
 Here is an signup confirm mail example from http://isitdown.no using GMail :
 
+
+      import no.skytteren.mail._
+      
       val mailSender = new GMailMailSender(mailer = "IsItDown", username = "userName", password = "not so s3cr3t")
       
       val form : String = "sk@IsItDown.NOw"
