@@ -10,7 +10,9 @@ publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.
 
 libraryDependencies += "javax.mail" % "mail" % "1.4.7"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
+
+libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.2"
 
 //should check org.github.rjo1970 dumbster (if it gets published)
 
