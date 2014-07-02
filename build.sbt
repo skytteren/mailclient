@@ -4,6 +4,8 @@ organization := "no.skytteren"
 
 scalaVersion := "2.11.1"
 
+crossScalaVersions := Seq("2.10.4", "2.11.1")
+
 releaseSettings
 
 publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
