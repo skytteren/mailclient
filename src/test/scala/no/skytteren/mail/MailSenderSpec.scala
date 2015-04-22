@@ -13,7 +13,7 @@ class MailSenderSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll{
 	greenMail.setUser("mailer", "s3cr3t")
   greenMail.start();
 	
-	override def afterAll(){
+	override def afterAll(): Unit = {
 		greenMail.stop()
 	}
 	

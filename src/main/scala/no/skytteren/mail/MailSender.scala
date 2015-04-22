@@ -28,7 +28,7 @@ abstract class MailSender(mailer: String) {
 
 	val session = Session.getInstance(props)
 	
-	def send(emailMessage: EmailMessage) {
+	def send(emailMessage: EmailMessage): Unit = {
 		import emailMessage._
 
 		val msg = new MimeMessage(session)
@@ -63,7 +63,7 @@ abstract class MailSender(mailer: String) {
 	
 	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Unit
 
-	private def collect(in: NodeSeq, msg: Message) {
+	private def collect(in: NodeSeq, msg: Message): Unit = {
 		msg.setDataHandler(new DataHandler(new ByteArrayDataSource(in.mkString, "text/html")))
 	}
 }
@@ -73,7 +73,7 @@ class TLSMailSender(host: String, port: Int = 587, mailer: String, username: Str
 	
 	props.put("mail.smtp.starttls.enable", "true");
 	
-	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]) {
+	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Unit = {
 		val transport = session.getTransport("smtp")
 		transport.connect(host, port, username, password)
 		transport.sendMessage(msg, toCcBccAddresses.toArray )
