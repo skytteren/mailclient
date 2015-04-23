@@ -6,6 +6,8 @@ import com.icegreen.greenmail.util.GreenMail
 import com.icegreen.greenmail.util.ServerSetup
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
+import javax.mail.internet.MimeMultipart
+import scala.util.Success
 
 class MailSenderSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll{
 
@@ -16,22 +18,51 @@ class MailSenderSpec extends FunSpec with GivenWhenThen with BeforeAndAfterAll{
 	override def afterAll(): Unit = {
 		greenMail.stop()
 	}
-	
 	describe("TLSMailSender") {
 		val sender = new TLSMailSender(host = "localhost", port = 10587, mailer = "TestMailer", username = "mailer", password = "s3cr3t")
-		it("should be able to send mail to tls smtp server") {
+		it("should be able to send multipart mail to tls smtp server") {
+			val html = <html><body><h1>HELLO</h1></body></html>
 			Given("An email")
 			val email = EmailMessage(
 					to = List(EmailAddress("test tested <test.tested@somewhere.com>")),
 					from = EmailAddress("from someone <from@someone.com>"),
 					subject = "Test subject",
-					//altText: String,
-					html = <html><body><h1>HELLO</h1></body></html>
+					altText = Some("HELLO"),
+					html = html
+			)
+			When("sending mail by the tls mail client")
+			assert(Success({}) === sender.send(email))
+			Then("should one should recieve mail")
+			val msg = greenMail.getReceivedMessages()(0)
+			assert("Test subject" === msg.getSubject())
+			msg.getContent() match {
+				case mmp: MimeMultipart => 
+					assert("HELLO" === mmp.getBodyPart(0).getContent)
+					assert(html.toString() === mmp.getBodyPart(1).getContent)
+				case _ => fail()
+			}
+		}
+		
+		it("should be able to send html mail to tls smtp server") {
+			val html = <html><body><h1>HELLO</h1></body></html>
+			Given("An email")
+			val email = EmailMessage(
+					to = List(EmailAddress("test tested <test.tested@somewhere.com>")),
+					from = EmailAddress("from someone <from@someone.com>"),
+					subject = "Test subject",
+					altText = None,
+					html = html
 			)
 			When("sending mail by the tls mail client")
 			sender.send(email)
 			Then("should one should recieve mail")
-			assert("Test subject" === greenMail.getReceivedMessages()(0).getSubject())
+			val msg = greenMail.getReceivedMessages()(0)
+			assert("Test subject" === msg.getSubject())
+			msg.getContent() match {
+				case mmp: MimeMultipart => 
+					assert("HELLO" === mmp.getBodyPart(0).getContent)
+				case _ => fail()
+			}
 		}
 	}
 

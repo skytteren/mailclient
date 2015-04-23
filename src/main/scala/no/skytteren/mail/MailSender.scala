@@ -9,6 +9,9 @@ import javax.mail.util._
 import scala.xml.NodeSeq
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.InternetAddress
+import scala.util.Try
+import javax.mail.internet.MimeMultipart
+import javax.mail.internet.MimeBodyPart
 
 case class EmailAddress(value: String) extends AnyVal
 
@@ -18,7 +21,7 @@ case class EmailMessage(
 	bcc: Seq[EmailAddress] = Nil,
 	from: EmailAddress,
 	subject: String,
-	//altText: String,
+	altText: Option[String],
 	html: NodeSeq)
 
 abstract class MailSender(mailer: String) {
@@ -28,44 +31,52 @@ abstract class MailSender(mailer: String) {
 
 	val session = Session.getInstance(props)
 	
-	def send(emailMessage: EmailMessage): Unit = {
+	def send(emailMessage: EmailMessage): Try[Unit] = {
 		import emailMessage._
-
-		val msg = new MimeMessage(session)
-
+		
 		def toAddress(emailAddress: EmailAddress): Address = InternetAddress.parse(emailAddress.value, false).head
-		
-		import Message.RecipientType._
-		
+
 		val toAddresses = to.map(toAddress)
-		toAddresses.foreach(msg.addRecipient(TO, _))
-
 		val ccAddresses = cc.map(toAddress)
-		ccAddresses.foreach(msg.addRecipient(CC, _))
-		
 		val bccAddresses = bcc.map(toAddress)
-		bccAddresses.foreach(msg.addRecipient(BCC, _))
 		
-		msg.setFrom(toAddress(from))
-		
-		msg.setSubject(subject)
+		val tried = Try{
+			val msg = new MimeMessage(session)
 
-		// TODO Add alternative text for mail
-		//msg.setText(altText)
-		
-		collect(html, msg)
-		
-		msg.setHeader("X-Mailer", mailer)
-		msg.setSentDate(new Date())
-		
-		sendMessage(msg, toAddresses ++ ccAddresses ++ bccAddresses )
+			import Message.RecipientType._
+			toAddresses.foreach(msg.addRecipient(TO, _))
+			ccAddresses.foreach(msg.addRecipient(CC, _))
+			bccAddresses.foreach(msg.addRecipient(BCC, _))
+			msg.setFrom(toAddress(from))
+			
+			msg.setSubject(subject)
+			msg.setSentDate(new Date());
+			msg.setHeader("X-Mailer", mailer)
+	
+			altText match {
+				case Some(txt) => 
+					val textPart = new MimeBodyPart();
+			    textPart.setContent(txt, "text/plain")
+					
+			    val htmlPart = new MimeBodyPart();
+			    htmlPart.setDataHandler(new DataHandler(new ByteArrayDataSource(html.mkString, "text/html")))
+			    
+			    val mp = new MimeMultipart("alternative");
+					mp.addBodyPart(textPart);
+					mp.addBodyPart(htmlPart);
+			    msg.setContent(mp);
+				case None => 
+					msg.setDataHandler(new DataHandler(new ByteArrayDataSource(html.mkString, "text/html")))
+			}
+			
+	    msg.saveChanges();
+	    msg
+		}
+		tried.flatMap(msg => sendMessage(msg, toAddresses ++ ccAddresses ++ bccAddresses ))
 	}
 	
-	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Unit
+   protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Try[Unit]
 
-	private def collect(in: NodeSeq, msg: Message): Unit = {
-		msg.setDataHandler(new DataHandler(new ByteArrayDataSource(in.mkString, "text/html")))
-	}
 }
 
 class TLSMailSender(host: String, port: Int = 587, mailer: String, username: String, password: String) 
@@ -73,7 +84,7 @@ class TLSMailSender(host: String, port: Int = 587, mailer: String, username: Str
 	
 	props.put("mail.smtp.starttls.enable", "true");
 	
-	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Unit = {
+	protected def sendMessage(msg: MimeMessage, toCcBccAddresses: Seq[Address]): Try[Unit] = Try{
 		val transport = session.getTransport("smtp")
 		transport.connect(host, port, username, password)
 		transport.sendMessage(msg, toCcBccAddresses.toArray )
